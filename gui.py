@@ -21,6 +21,22 @@ class Square:
                                 self.grid.scale,
                                 self.grid.scale)
 
+    def keypress(self, num):
+        """ Updates the instance based on state of grid and key pressed """
+        if self.grid.value_mode:
+            if num == self.value:
+                self.value = 0
+            else:
+                self.value = num
+        else:
+            if num in self.possibles:
+                self.possibles.remove(num)
+            elif num != 0:
+                self.possibles.add(num)
+        self.erase()
+        self.draw()
+        pygame.display.update()
+
     def center_pos(self, x_or_y):
         """Given the x or y position of this square, returns the coordinates"""
         grid_widths = (x_or_y + 0.5) * (self.grid.scale + self.grid.grid_width)
@@ -29,8 +45,10 @@ class Square:
 
     def erase(self):
         """ Erases the current square in the grid """
-        if self.selected:
-            col = self.grid.sel_bg
+        if self.selected and self.grid.value_mode:
+            col = self.grid.sel_val_bg
+        elif self.selected:
+            col = self.grid.sel_pos_bg
         else:
             col = self.grid.col_bg
         pygame.draw.rect(self.grid.screen, col, self.rect, 0)
@@ -65,6 +83,13 @@ class Grid:
     """
     Grid containing the 9x9 Squares
     """
+    scale = 70
+    grid_width = 2
+    grid_break = 5
+    col_bg = (255, 255, 255)
+    sel_val_bg = (160, 160, 255)
+    sel_pos_bg = (200, 200, 255)
+
 
     def show_grid(self):
         """ Displays all possibles and values in the grid"""
@@ -75,11 +100,7 @@ class Grid:
         pygame.display.update()
 
     def __init__(self):
-        self.scale = 70
-        self.grid_width = 2
-        self.grid_break = 5
-        self.col_bg = (255, 255, 255)
-        self.sel_bg = (200, 200, 255)
+        self.value_mode = False
 
         pygame.font.init()
         self.poss_font = pygame.font.SysFont('Comic Sans MS', 30)
@@ -103,6 +124,13 @@ class Grid:
         for square in self.squaredict.values():
             square.selected = False
 
+    def pass_to_selected(self, key):
+        """ Passes a key to the selected square """
+        for square in self.squaredict.values():
+            if square.selected:
+                square.keypress(key)
+                break
+
 def eventloop(grid):
     """ Main eventloop for detecting user interaction with pygame"""
     running = True
@@ -121,14 +149,29 @@ def eventloop(grid):
             if event.type == pygame.QUIT:
                 running = False
                 pygame.quit()
+
+            if event.type == pygame.KEYDOWN:
+                # Handle unicode digits
+                if 48 <= event.key <= 57:
+                    grid.pass_to_selected(event.key-48)
+
+                # ctrl or shift to switch modes
+                if event.key in [304, 306]:
+                    grid.value_mode = ~grid.value_mode
+                    grid.show_grid()
+
 def main():
     """
     Main function
     """
     grid = Grid()
     grid.squaredict[(3, 4)].value = 5
+    print("Press shift to change between possibles mode and value mode")
     grid.show_grid()
-    eventloop(grid)
+    try:
+        eventloop(grid)
+    except KeyboardInterrupt:
+        pygame.quit()
 
 if __name__ == '__main__':
     main()
