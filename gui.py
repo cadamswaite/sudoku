@@ -1,6 +1,7 @@
 """
 GUI for displaying a Sudoku Grid
 """
+import sys
 import math
 import pygame
 
@@ -99,7 +100,7 @@ class Grid:
             square.draw()
         pygame.display.update()
 
-    def __init__(self):
+    def __init__(self, gridstring=None):
         self.value_mode = False
 
         pygame.font.init()
@@ -111,6 +112,20 @@ class Grid:
                            for y in range(9)}
         self.screen = pygame.display.set_mode((9*(self.scale+self.grid_width)+2*self.grid_break,
                                                9*(self.scale+self.grid_width)+2*self.grid_break))
+        if gridstring is not None:
+            self.updategrid(gridstring)
+
+    def updategrid(self, gridstring):
+        """ Copies a given string into the coresponding values """
+        for x in range(9):
+            for y in range(9):
+                self.squaredict[(x, y)].value = int(gridstring[x + y*9])
+
+    def __str__(self):
+        return "".join(str(self.squaredict[(x, y)].value)
+                       for y in range(9)
+                       for x in range(9))
+
 
     def clicked_square(self, point):
         """ Returns the clicked square when given x,y within the rectangle """
@@ -151,6 +166,9 @@ def eventloop(grid):
                 pygame.quit()
 
             if event.type == pygame.KEYDOWN:
+                # Find key values for adding new cases
+                #print(event.key)
+
                 # Handle unicode digits
                 if 48 <= event.key <= 57:
                     grid.pass_to_selected(event.key-48)
@@ -160,11 +178,19 @@ def eventloop(grid):
                     grid.value_mode = ~grid.value_mode
                     grid.show_grid()
 
+                # If esc, kill the program
+                if event.key == 27:
+                    sys.exit()
+
+                # If enter, exit eventloop
+                if event.key == 13:
+                    return
+
 def main():
     """
-    Main function
+    Shows a basic example using this class
     """
-    grid = Grid()
+    grid = Grid("040000179002008054006005008080070910050090030019060040300400700570100200928000060")
     grid.squaredict[(3, 4)].value = 5
     print("Press shift to change between possibles mode and value mode")
     grid.show_grid()
